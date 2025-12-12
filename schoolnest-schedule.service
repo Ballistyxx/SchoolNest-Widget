@@ -1,0 +1,11 @@
+[Unit]
+Description=Fetch SchoolNest schedule
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/fetch_schedule.sh
+
+[Install]
+WantedBy=default.target

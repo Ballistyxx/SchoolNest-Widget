@@ -1,0 +1,24 @@
+# Test files
+test_parse.sh
+PeriodWidget_debug.qml
+
+# Downloaded HTML samples
+*.html
+*_files/
+
+# Original documentation (replaced by README)
+INSTALLATION.md
+
+# Unused versions
+PeriodWidget_old.qml
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
