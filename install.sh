@@ -24,7 +24,7 @@ cp schoolnest-schedule.timer "$SYSTEMD_USER_DIR/"
 
 # Install widget files
 echo "Installing widget components..."
-cp PeriodWidget_themed.qml "$QUICKSHELL_BAR_DIR/PeriodWidget.qml"
+cp PeriodWidget.qml "$QUICKSHELL_BAR_DIR/PeriodWidget.qml"
 cp PeriodWidgetPopup.qml "$QUICKSHELL_BAR_DIR/"
 
 # Enable and start timer

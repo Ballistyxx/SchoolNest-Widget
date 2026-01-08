@@ -5,7 +5,6 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=%h/.local/bin/fetch_schedule.sh
-
+ExecStart=%h/.local/bin/fetch_schedule.sh && touch %h/.local/share/schoolnest/.reload_trigger
 [Install]
 WantedBy=default.target

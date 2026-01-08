@@ -1,10 +1,14 @@
 [Unit]
-Description=Fetch SchoolNest schedule daily
-Requires=schoolnest-schedule.service
+Description=Fetch SchoolNest schedule on weekdays
 
 [Timer]
-OnBootSec=1min
-OnUnitActiveSec=1d
+# Run at 6:00 AM and 12:00 PM on weekdays only (Mon-Fri)
+OnCalendar=Mon-Fri 06:00
+OnCalendar=Mon-Fri 12:00
+# Run 30 seconds after boot or systemd user session start (login/resume)
+OnBootSec=30s
+OnStartupSec=30s
+# If laptop was suspended during scheduled time, run immediately on resume
 Persistent=true
 
 [Install]

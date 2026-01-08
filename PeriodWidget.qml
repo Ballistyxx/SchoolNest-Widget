@@ -11,17 +11,60 @@ import qs.modules.common.widgets
 Item {
     id: root
     // Fill the parent container (which has a fixed width)
-    implicitWidth: parent ? parent.width : 80
-    implicitHeight: rowLayout.implicitHeight
+    // Hide widget when no valid schedule or outside school hours
+    implicitWidth: (isScheduleValid && isSchoolHours) ? (parent ? parent.width : 80) : 0
+    implicitHeight: (isScheduleValid && isSchoolHours) ? rowLayout.implicitHeight : 0
+    visible: isScheduleValid && isSchoolHours
 
     // Path to the schedule JSON file
     property string scheduleFile: Quickshell.env("HOME") + "/.local/share/schoolnest/schedule.json"
+    property string reloadTriggerFile: Quickshell.env("HOME") + "/.local/share/schoolnest/.reload_trigger"
     property var scheduleData: null
     property string currentPeriodName: ""
     property int timeRemaining: 0 // in seconds
     property bool isSchoolHours: false
     property bool scheduleLoaded: false
     property bool isTransition: false  // True when between periods
+    property bool isScheduleValid: false  // True if schedule is from today and has data
+    property string lastTriggerModTime: ""  // Track last modification time
+
+    // Check for reload trigger file changes
+    Timer {
+        running: true
+        repeat: true
+        interval: 5000  // Check every 5 seconds
+        triggeredOnStart: true
+        onTriggered: checkReloadTrigger()
+    }
+
+    // Process to check trigger file modification time
+    Process {
+        id: triggerChecker
+        command: ["stat", "-c", "%Y", root.reloadTriggerFile]
+        running: false
+
+        stdout: SplitParser {
+            onRead: data => {
+                const modTime = data.trim()
+                if (root.lastTriggerModTime !== "" && modTime !== root.lastTriggerModTime) {
+                    console.log("Reload trigger detected, reloading schedule...")
+                    loadSchedule()
+                }
+                root.lastTriggerModTime = modTime
+            }
+        }
+
+        onExited: (code, status) => {
+            // Trigger file doesn't exist yet - create it
+            if (code !== 0 && root.lastTriggerModTime === "") {
+                root.lastTriggerModTime = "0"
+            }
+        }
+    }
+
+    function checkReloadTrigger() {
+        triggerChecker.running = true
+    }
 
     // Process to read the schedule file
     Process {
@@ -34,9 +77,27 @@ Item {
                 try {
                     root.scheduleData = JSON.parse(data)
                     root.scheduleLoaded = true
-                    console.log("Schedule loaded successfully")
+
+                    // Check if schedule is valid (from today and has data)
+                    const today = new Date()
+                    const todayStr = today.getFullYear() + "-" +
+                                   String(today.getMonth() + 1).padStart(2, '0') + "-" +
+                                   String(today.getDate()).padStart(2, '0')
+
+                    const fetchedDate = root.scheduleData.fetched_date || ""
+                    const hasSchedule = root.scheduleData.schedule !== null &&
+                                      root.scheduleData.schedule !== undefined
+
+                    root.isScheduleValid = (fetchedDate === todayStr) && hasSchedule
+
+                    if (!root.isScheduleValid) {
+                        console.log("Schedule invalid - Date:", fetchedDate, "Today:", todayStr, "Has schedule:", hasSchedule)
+                    } else {
+                        console.log("Schedule loaded successfully for", fetchedDate)
+                    }
                 } catch (e) {
                     console.error("Failed to parse schedule:", e)
+                    root.isScheduleValid = false
                 }
             }
         }
@@ -71,7 +132,7 @@ Item {
     }
 
     function updateCurrentPeriod() {
-        if (!root.scheduleData || !root.scheduleData.schedule || !root.scheduleData.schedule.periods) {
+        if (!root.isScheduleValid || !root.scheduleData || !root.scheduleData.schedule || !root.scheduleData.schedule.periods) {
             root.isSchoolHours = false
             root.isTransition = false
             return
